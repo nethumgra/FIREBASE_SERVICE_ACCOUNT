@@ -7,6 +7,8 @@ const GlobalCart = dynamic(() => import("@/components/GlobalCart"), { ssr: false
 const SplashOverlay = dynamic(() => import("@/components/SplashOverlay"), { ssr: false });
 const AppUpdater = dynamic(() => import("@/components/AppUpdater"), { ssr: false });
 
+const GiftCouponPopup = dynamic(() => import("@/components/GiftCouponPopup"), { ssr: false });
+
 export const metadata: Metadata = {
   title: "Vito Delivery - Fast Delivery in Your City",
   description:
@@ -33,6 +35,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <GlobalCart />
         </Suspense>
+        <GiftCouponPopup />
       </body>
     </html>
   );

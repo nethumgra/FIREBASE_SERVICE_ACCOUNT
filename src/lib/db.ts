@@ -22,6 +22,7 @@ import {
   addDoc,
   deleteDoc,
   limit,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -152,6 +153,19 @@ export interface CategoryConfig {
   order: number;       // display order
   isActive: boolean;
   statusSteps?: string[];  // e.g. ["Cooking", "Packing"] for food category
+}
+
+export interface GiftCoupon {
+  id: string;
+  code: string;
+  userId: string;
+  userName: string;
+  shopId: string;
+  shopName: string;
+  description: string;
+  status: 'active' | 'used';
+  createdAt: Timestamp | null;
+  usedAt: Timestamp | null;
 }
 
 /* ============================================
@@ -600,6 +614,59 @@ export async function getAllProductsByCity(city: string): Promise<(Product & { s
     const aTime = (a.createdAt as any)?.toMillis?.() || 0;
     const bTime = (b.createdAt as any)?.toMillis?.() || 0;
     return bTime - aTime;
+  });
+}
+
+/* ============================================
+   GIFT COUPON SERVICES
+   ============================================ */
+
+/** Create a gift coupon (Admin only) */
+export async function createGiftCoupon(data: Omit<GiftCoupon, "id" | "createdAt" | "usedAt" | "status">) {
+  const ref = collection(db, "gift_coupons");
+  const docRef = await addDoc(ref, {
+    ...data,
+    status: "active",
+    createdAt: serverTimestamp(),
+    usedAt: null,
+  });
+  return docRef.id;
+}
+
+/** Listen to active gift coupons for a user in real-time */
+export function onUserGiftCoupons(userId: string, callback: (coupons: GiftCoupon[]) => void) {
+  const ref = collection(db, "gift_coupons");
+  const q = query(
+    ref, 
+    where("userId", "==", userId), 
+    where("status", "==", "active"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as GiftCoupon)));
+  });
+}
+
+/** Listen to active gift coupons for a shop in real-time */
+export function onShopGiftCoupons(shopId: string, callback: (coupons: GiftCoupon[]) => void) {
+  const ref = collection(db, "gift_coupons");
+  const q = query(
+    ref, 
+    where("shopId", "==", shopId), 
+    where("status", "==", "active"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as GiftCoupon)));
+  });
+}
+
+/** Redeem a gift coupon (Seller only) */
+export async function redeemGiftCoupon(couponId: string) {
+  const ref = doc(db, "gift_coupons", couponId);
+  await updateDoc(ref, {
+    status: "used",
+    usedAt: serverTimestamp(),
   });
 }
 

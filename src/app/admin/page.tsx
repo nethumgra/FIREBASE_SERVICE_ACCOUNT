@@ -17,9 +17,10 @@ import {
   Box,
   MapPin,
   Package,
-  Bike
+  Bike,
+  Gift
 } from "lucide-react";
-import { getBanners, addBanner, toggleBannerStatus, deleteBanner, Banner, getAllShops, Shop, updateShop, deleteShop, getCategoryConfigs, updateCategoryConfig, addCategoryConfig, deleteCategoryConfig, CategoryConfig, Location, getLocations, addLocation, deleteLocation, getAllProducts, Product, updateProduct, getUsersByRole, VitoUser, getAppUpdateConfig, setAppUpdateConfig } from "@/lib/db";
+import { getBanners, addBanner, toggleBannerStatus, deleteBanner, Banner, getAllShops, Shop, updateShop, deleteShop, getCategoryConfigs, updateCategoryConfig, addCategoryConfig, deleteCategoryConfig, CategoryConfig, Location, getLocations, addLocation, deleteLocation, getAllProducts, Product, updateProduct, getUsersByRole, VitoUser, getAppUpdateConfig, setAppUpdateConfig, createGiftCoupon } from "@/lib/db";
 import { createSellerAccountAndShop } from "@/lib/auth";
 import { createDeliveryBoyAccount } from "@/lib/auth";
 import { storage } from "@/lib/firebase";
@@ -40,6 +41,13 @@ export default function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingShop, setIsCreatingShop] = useState(false);
   const [showAddShopForm, setShowAddShopForm] = useState(false);
+
+  // Street Game Gifts State
+  const [customers, setCustomers] = useState<VitoUser[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [selectedShopId, setSelectedShopId] = useState("");
+  const [giftDescription, setGiftDescription] = useState("");
+  const [isIssuingGift, setIsIssuingGift] = useState(false);
 
   // New Delivery Boy Form
   const [showAddBoyForm, setShowAddBoyForm] = useState(false);
@@ -138,7 +146,56 @@ export default function AdminDashboard() {
     if (activeTab === "items") loadProducts();
     if (activeTab === "delivery_boys") { loadDeliveryBoys(); loadLocations(); }
     if (activeTab === "settings") loadAppConfig();
+    if (activeTab === "gifts") { loadCustomers(); loadShops(); }
   }, [activeTab]);
+
+  const loadCustomers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getUsersByRole("customer");
+      setCustomers(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleIssueGift = async () => {
+    if (!selectedCustomerId || !selectedShopId || !giftDescription.trim()) {
+      return alert("Please fill all fields.");
+    }
+    
+    setIsIssuingGift(true);
+    try {
+      const customer = customers.find(c => c.uid === selectedCustomerId);
+      const shop = shops.find(s => s.id === selectedShopId);
+      
+      if (!customer || !shop) throw new Error("Invalid selection");
+
+      // Generate a nice random code e.g. VITO-X9A2
+      const code = "VITO-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+      await createGiftCoupon({
+        code,
+        userId: customer.uid,
+        userName: customer.name || "Customer",
+        shopId: shop.id,
+        shopName: shop.name,
+        description: giftDescription.trim()
+      });
+
+      alert(`Gift Coupon created successfully! Code: ${code}`);
+      setSelectedCustomerId("");
+      setSelectedShopId("");
+      setGiftDescription("");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to issue gift: " + err.message);
+    } finally {
+      setIsIssuingGift(false);
+    }
+  };
 
   const loadAppConfig = async () => {
     try {
@@ -734,6 +791,12 @@ export default function AdminDashboard() {
             <Users size={20} /> Users
           </button>
           <button
+            className={`admin-nav-item ${activeTab === "gifts" ? "active" : ""}`}
+            onClick={() => setActiveTab("gifts")}
+          >
+            <Gift size={20} /> Street Gifts
+          </button>
+          <button
             className={`admin-nav-item ${activeTab === "settings" ? "active" : ""}`}
             onClick={() => setActiveTab("settings")}
           >
@@ -751,6 +814,73 @@ export default function AdminDashboard() {
         </header>
 
         <div className="admin-content">
+          {activeTab === "gifts" && (
+            <div className="admin-card">
+              <h2 className="admin-card-title"><Gift size={20} /> Issue Street Game Gift</h2>
+              <div style={{ marginBottom: 30, background: "#f8fafc", padding: 20, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                <p style={{ fontSize: 14, color: "#64748b", marginBottom: 0 }}>
+                  Select a recently registered customer and a shop to issue a random gift coupon. The customer will receive an instant popup on their app.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 500 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600 }}>Select Customer</label>
+                  <select 
+                    className="admin-input"
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  >
+                    <option value="">-- Choose Customer --</option>
+                    {customers.slice(0, 50).map(c => (
+                      <option key={c.uid} value={c.uid}>
+                        {c.name} ({c.phone1 || c.email}) - {new Date(c.createdAt?.toMillis() || 0).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 12, color: "#6b7280" }}>Showing 50 most recent customers</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600 }}>Select Shop to Redeem At</label>
+                  <select 
+                    className="admin-input"
+                    value={selectedShopId}
+                    onChange={(e) => setSelectedShopId(e.target.value)}
+                  >
+                    <option value="">-- Choose Shop --</option>
+                    {shops.filter(s => s.isApproved).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.city})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600 }}>Gift Description</label>
+                  <input 
+                    type="text" 
+                    className="admin-input" 
+                    placeholder="e.g. Free Chicken Burger"
+                    value={giftDescription}
+                    onChange={(e) => setGiftDescription(e.target.value)}
+                  />
+                </div>
+
+                <button 
+                  className="btn btn-primary" 
+                  style={{ padding: 14, marginTop: 10, display: "flex", justifyContent: "center", gap: 8 }}
+                  onClick={handleIssueGift}
+                  disabled={isIssuingGift}
+                >
+                  {isIssuingGift ? <span className="admin-spinner" style={{ width: 18, height: 18 }}></span> : <Gift size={18} />}
+                  {isIssuingGift ? "Issuing..." : "Send Gift Coupon"}
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === "settings" && (
             <div className="admin-card">
               <h2 className="admin-card-title"><Settings size={20} /> OTA App Updates</h2>

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Plus, Package, X, Image as ImageIcon, Store, Menu, ClipboardList, Settings, User, ZoomIn, ZoomOut, RotateCw, Check, Edit2, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { LogOut, Plus, Package, X, Image as ImageIcon, Store, Menu, ClipboardList, Settings, User, ZoomIn, ZoomOut, RotateCw, Check, Edit2, Trash2, Sparkles, Loader2, Gift } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { getUserProfile, getShopByOwnerId, getProductsByShop, addProduct, updateProduct, deleteProduct, updateShop, getShopOrders, updateOrderStatus, updateOrderPreparation, getCategoryConfigs, Shop, Product, ProductVariation, Order, CategoryConfig } from "@/lib/db";
+import { getUserProfile, getShopByOwnerId, getProductsByShop, addProduct, updateProduct, deleteProduct, updateShop, getShopOrders, updateOrderStatus, updateOrderPreparation, getCategoryConfigs, Shop, Product, ProductVariation, Order, CategoryConfig, GiftCoupon, onShopGiftCoupons, redeemGiftCoupon } from "@/lib/db";
 
 const IMGBB_API_KEY = "217524a50a4562e887cc3bca17c1fd41";
 const GEMINI_API_KEY = "AIzaSyA-j1hR-hUsOZkU4SM8lDOtkLFR1HQks1M";
@@ -183,7 +183,7 @@ export default function SellerDashboard() {
   const [sellerName, setSellerName] = useState("");
   const [shopError, setShopError] = useState("");
   const [showDrawer, setShowDrawer] = useState(false);
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "orders" | "gifts">("products");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editDescription, setEditDescription] = useState("");
   const [isUpdatingShop, setIsUpdatingShop] = useState(false);
@@ -191,6 +191,10 @@ export default function SellerDashboard() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [categories, setCategories] = useState<CategoryConfig[]>([]);
+
+  // Gifts state
+  const [giftCoupons, setGiftCoupons] = useState<GiftCoupon[]>([]);
+  const [isRedeemingGift, setIsRedeemingGift] = useState<string | null>(null);
 
   // Order Confirm Modal State
   const [confirmModalOrder, setConfirmModalOrder] = useState<Order | null>(null);
@@ -231,6 +235,11 @@ export default function SellerDashboard() {
           setProducts(shopProducts);
           setOrders(shopOrders);
           setCategories(allCategories);
+          
+          // Listen to active gifts for this shop
+          onShopGiftCoupons(sellerShop.id, (coupons) => {
+            setGiftCoupons(coupons);
+          });
         }
       } catch (err: any) {
         setShopError(err.message || "Failed to fetch shop.");
@@ -245,6 +254,18 @@ export default function SellerDashboard() {
     try {
       setOrders(await getShopOrders(shop.id));
     } finally { setOrdersLoading(false); }
+  };
+
+  const handleRedeemGift = async (couponId: string) => {
+    setIsRedeemingGift(couponId);
+    try {
+      await redeemGiftCoupon(couponId);
+      alert("Gift redeemed successfully!");
+    } catch (err: any) {
+      alert("Failed to redeem gift: " + err.message);
+    } finally {
+      setIsRedeemingGift(null);
+    }
   };
 
   const handleOrderAction = async (order: Order, action: "confirmed" | "cancelled") => {
@@ -665,6 +686,16 @@ export default function SellerDashboard() {
               </span>
             )}
           </button>
+          <button onClick={() => setActiveTab("gifts")}
+            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === "gifts" ? "bg-white shadow-sm text-gray-900" : "text-gray-400"
+              }`}>
+            <Gift size={16} /> Gifts
+            {giftCoupons.length > 0 && (
+              <span className="w-5 h-5 bg-green-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                {giftCoupons.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Products Tab */}
@@ -831,6 +862,56 @@ export default function SellerDashboard() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Gifts Tab */}
+        {activeTab === "gifts" && (
+          <div className="flex-1 overflow-y-auto px-4 sm:px-8 pt-4 sm:pt-8 pb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-gray-900 text-lg">Active Gift Coupons</h2>
+            </div>
+
+            {giftCoupons.length === 0 ? (
+              <div className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center shadow-sm text-center">
+                <Gift size={40} className="text-gray-200 mb-3" />
+                <h3 className="text-gray-700 font-bold mb-1">No active gifts</h3>
+                <p className="text-xs text-gray-400">Gift coupons issued to your shop will appear here.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {giftCoupons.map(coupon => (
+                  <div key={coupon.id} className="bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden relative">
+                    <div className="bg-green-50 px-4 py-2 border-b border-green-100 flex justify-between items-center">
+                      <span className="text-xs font-bold text-green-700 uppercase">🎁 Gift Coupon</span>
+                      <span className="text-[10px] text-gray-500">{new Date(coupon.createdAt?.toMillis() || 0).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="p-4 flex flex-col gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-0.5">Customer</p>
+                        <p className="text-sm font-bold text-gray-900">{coupon.userName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-0.5">Gift Details</p>
+                        <p className="text-lg font-black text-green-700">{coupon.description}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mt-2">
+                        <p className="text-[10px] text-gray-400 text-center uppercase font-bold mb-1">Secret Code</p>
+                        <p className="text-xl text-center font-black tracking-widest text-gray-800">{coupon.code}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleRedeemGift(coupon.id)}
+                        disabled={isRedeemingGift === coupon.id}
+                        className="w-full mt-2 py-3 rounded-xl text-white font-bold text-sm shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                        style={{ background: "linear-gradient(135deg, #2d6a2d, #348a34)" }}>
+                        {isRedeemingGift === coupon.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                        {isRedeemingGift === coupon.id ? "Redeeming..." : "Accept Gift"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

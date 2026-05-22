@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Apple, Share, PlusSquare, Smartphone, SmartphoneNfc, Store, User } from "lucide-react";
+import { Download, Apple, Share, PlusSquare, Smartphone, SmartphoneNfc, Store, User, CheckCircle, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type OS = "android" | "ios" | "desktop" | "unknown";
@@ -13,6 +13,11 @@ export default function DownloadPage() {
   const router = useRouter();
   const [os, setOs] = useState<OS>("unknown");
 
+  // Download State
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [apkBlobUrl, setApkBlobUrl] = useState<string | null>(null);
+
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
     if (/android/i.test(userAgent)) {
@@ -23,6 +28,54 @@ export default function DownloadPage() {
       setOs("desktop");
     }
   }, []);
+
+  const handleStartDownload = () => {
+    setIsDownloading(true);
+    setDownloadProgress(0);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", "/vito-delivery.apk", true);
+    xhr.responseType = "blob";
+
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        setDownloadProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const blobUrl = URL.createObjectURL(xhr.response);
+        setApkBlobUrl(blobUrl);
+        setDownloadProgress(100);
+        setIsDownloading(false);
+      } else {
+        setIsDownloading(false);
+        setDownloadProgress(null);
+        alert("Download failed. Please try again.");
+      }
+    };
+
+    xhr.onerror = () => {
+      setIsDownloading(false);
+      setDownloadProgress(null);
+      alert("Network error. Please try again.");
+    };
+
+    xhr.send();
+  };
+
+  const handleInstall = () => {
+    if (apkBlobUrl) {
+      const a = document.createElement("a");
+      a.href = apkBlobUrl;
+      a.download = "vito-delivery.apk";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
 
   return (
     <div className="w-full min-h-dvh flex flex-col font-sans bg-[#f5f6fa]">
@@ -75,17 +128,44 @@ export default function DownloadPage() {
                 <div className="bg-green-50 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 mb-6 border border-green-200">
                   <Smartphone className="w-4 h-4" /> Android App Available
                 </div>
-                <a
-                  href="/vito-delivery.apk"
-                  download
-                  className="w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95"
-                  style={{ background: `linear-gradient(135deg, ${GREEN_DARK}, ${GREEN})` }}
-                >
-                  <Download className="w-6 h-6 animate-bounce" />
-                  Download APK
-                </a>
-                <p className="text-xs text-gray-400 mt-4 px-4">
-                  Note: You might need to allow &quot;Install from unknown sources&quot; in your settings.
+                
+                {/* Download Flow */}
+                {!isDownloading && !apkBlobUrl && (
+                  <button
+                    onClick={handleStartDownload}
+                    className="w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95"
+                    style={{ background: `linear-gradient(135deg, ${GREEN_DARK}, ${GREEN})` }}
+                  >
+                    <Download className="w-6 h-6 animate-bounce" />
+                    Download APK
+                  </button>
+                )}
+
+                {isDownloading && (
+                  <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+                    <span className="text-gray-700 font-bold mb-3">Downloading... {downloadProgress}%</span>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                      <div className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-out" style={{ width: `${downloadProgress}%` }}></div>
+                    </div>
+                  </div>
+                )}
+
+                {apkBlobUrl && !isDownloading && (
+                  <div className="w-full flex flex-col items-center">
+                    <div className="text-green-600 flex items-center gap-2 font-bold mb-4">
+                      <CheckCircle className="w-5 h-5" /> Download Complete
+                    </div>
+                    <button
+                      onClick={handleInstall}
+                      className="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-blue-600/30 flex items-center justify-center gap-3 transition-all active:scale-95"
+                    >
+                      Install App <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-400 mt-4 px-4 leading-relaxed">
+                  Note: You might need to allow &quot;Install from unknown sources&quot; in your settings. After clicking Install, select &quot;Open&quot; from the popup.
                 </p>
               </div>
             )}

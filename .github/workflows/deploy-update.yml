@@ -1,0 +1,32 @@
+name: Deploy OTA Update to Firebase
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  build-and-deploy-ota:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Next.js App (Static Export)
+        run: npm run build
+        
+      # Make sure the upload script is executable (optional for node scripts, but good practice)
+      - name: Run Upload Script
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/upload-update.js

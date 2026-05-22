@@ -100,7 +100,7 @@ export default function AuthPage() {
 
       <h2 className="auth-welcome">
         {activeTab === "login" ? (
-          <><Sparkles size={22} className="auth-welcome-icon" /> Welcome back</>
+          <><Sparkles size={22} className="auth-welcome-icon" /> Welcome</>
         ) : (
           <><Sparkles size={22} className="auth-welcome-icon" /> Create account</>
         )}

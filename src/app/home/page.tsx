@@ -201,7 +201,10 @@ export default function CustomerHomePage() {
         <div className="w-full max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <img src="/logo.png" alt="Vito Logo" className="h-10 w-auto object-contain cursor-pointer" onClick={() => router.push('/home')} />
-            <div className="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors text-white">
+            <div 
+              className="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition-colors text-white"
+              onClick={() => setShowLocationModal(true)}
+            >
               <MapPin size={18} />
               <span className="font-semibold text-sm">{selectedCity}</span>
               <ChevronDown size={16} className="text-white/70" />
@@ -617,11 +620,11 @@ export default function CustomerHomePage() {
       {/* ===== LOCATION PICKER MODAL ===== */}
       {showLocationModal && (
         <div
-          className="sm:hidden fixed inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => { setShowLocationModal(false); setSelectedDistrict(""); setDistrictCities([]); setPendingCity(""); }}
         >
           <div
-            className="w-full max-w-md bg-white rounded-t-3xl pb-10 animate-slide-up overflow-hidden"
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl pb-10 sm:pb-6 animate-slide-up overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             {/* Handle bar */}
@@ -657,7 +660,7 @@ export default function CustomerHomePage() {
                   onChange={e => handleDistrictChange(e.target.value)}
                   className="w-full appearance-none bg-gray-50 border-2 border-gray-200 rounded-2xl px-4 py-3.5 pr-10 text-sm font-semibold text-gray-800 focus:outline-none focus:border-green-600 transition-colors"
                 >
-                  <option value="">-- District Select කරන්න --</option>
+                  <option value="">-- Select District --</option>
                   {SRI_LANKA_DISTRICTS.map(d => (
                     <option key={d} value={d}>{d}</option>
                   ))}
@@ -669,7 +672,7 @@ export default function CustomerHomePage() {
             {/* Step 2: City List */}
             {selectedDistrict && (
               <div className="px-6 pt-4">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">2. City Select කරන්න</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">2. Select City</label>
                 {isCitiesLoading ? (
                   <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
                     <Loader2 size={20} className="animate-spin" />
@@ -679,7 +682,7 @@ export default function CustomerHomePage() {
                   <div className="text-center py-8">
                     <MapPin size={32} className="mx-auto text-gray-200 mb-2" />
                     <p className="text-sm text-gray-400 font-medium">No cities added yet</p>
-                    <p className="text-xs text-gray-300 mt-1">Admin panel ලදී cities add කරන්න</p>
+                    <p className="text-xs text-gray-300 mt-1">Please add cities in the Admin panel</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
@@ -710,9 +713,9 @@ export default function CustomerHomePage() {
                 style={{ background: `linear-gradient(135deg, ${GREEN_LIGHT}, ${GREEN_DARK})` }}
               >
                 {pendingCity ? (
-                  <><Check size={18} /> {pendingCity} Select කරන්න</>
+                  <><Check size={18} /> Select {pendingCity}</>
                 ) : (
-                  <>City Select කරන්න</>
+                  <>Select City</>
                 )}
               </button>
             </div>

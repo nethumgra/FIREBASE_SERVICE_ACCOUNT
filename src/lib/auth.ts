@@ -9,7 +9,9 @@ import {
   onAuthStateChanged,
   updateProfile,
   User,
-  getAuth
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 import { initializeApp, deleteApp } from "firebase/app";
 import { auth, firebaseConfig } from "./firebase";
@@ -77,6 +79,39 @@ export async function loginUser(email: string, password: string): Promise<VitoUs
   const profile = await getUserProfile(uid);
   if (!profile) {
     throw new Error("User profile not found. Please contact support.");
+  }
+
+  return profile;
+}
+
+/**
+ * Sign in with Google
+ */
+export async function loginWithGoogle(): Promise<VitoUser> {
+  const provider = new GoogleAuthProvider();
+  const credential = await signInWithPopup(auth, provider);
+  const user = credential.user;
+  const uid = user.uid;
+
+  let profile = await getUserProfile(uid);
+  
+  if (!profile) {
+    // Create a new profile if it doesn't exist
+    await createUserProfile(uid, {
+      name: user.displayName || "Google User",
+      email: user.email || "",
+      phone1: user.phoneNumber || "",
+      phone2: "",
+      address: "",
+      city: "",
+      role: "customer",
+      isActive: true,
+    });
+    profile = await getUserProfile(uid);
+  }
+
+  if (!profile) {
+    throw new Error("Failed to load user profile.");
   }
 
   return profile;

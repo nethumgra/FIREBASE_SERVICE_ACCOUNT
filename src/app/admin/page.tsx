@@ -27,7 +27,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { SRI_LANKA_CITIES, SRI_LANKA_DISTRICTS } from "@/lib/config";
 import "./admin.css";
 
-const IMGBB_API_KEY = "0e2a5f0af43488c369967550c7c56253"; // Updated with user provided key
+const IMGBB_API_KEY = "217524a50a4562e887cc3bca17c1fd41"; // Updated with user provided key
 
 
 export default function AdminDashboard() {

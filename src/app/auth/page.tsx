@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser, registerUser } from "@/lib/auth";
-import { getBanners, Banner, getLocations, Location } from "@/lib/db";
+import { loginUser, registerUser, loginWithGoogle } from "@/lib/auth";
+import { getBanners, Banner, getLocations, Location, updateUserProfile } from "@/lib/db";
 import { Eye, EyeOff, Mail, Lock, MapPin, Sparkles } from "lucide-react";
 import { SRI_LANKA_CITIES } from "@/lib/config";
 import "./auth.css";
@@ -18,6 +18,12 @@ export default function AuthPage() {
   const [panelImage, setPanelImage] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
+
+  // Google Sign-In Location Flow
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [googleUser, setGoogleUser] = useState<any>(null);
+  const [googleDistrict, setGoogleDistrict] = useState("");
+  const [googleCity, setGoogleCity] = useState("");
 
   // Login State
   const [loginEmail, setLoginEmail] = useState("");
@@ -86,6 +92,39 @@ export default function AuthPage() {
     } catch (err: any) {
       setAuthError(getFriendlyError(err.code || ""));
     } finally { setIsLoading(false); }
+  };
+
+  const handleGoogleAuth = async () => {
+    setIsLoading(true); setAuthError("");
+    try {
+      const user = await loginWithGoogle();
+      if (!user.city) {
+        setGoogleUser(user);
+        setShowLocationModal(true);
+      } else {
+        redirectByRole(user.role, user.city);
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        setAuthError("Google Sign-In failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!googleCity || !googleUser) return;
+    setIsLoading(true);
+    try {
+      await updateUserProfile(googleUser.uid, { city: googleCity });
+      redirectByRole(googleUser.role, googleCity);
+    } catch (e) {
+      console.error(e);
+      setAuthError("Failed to save location");
+      setIsLoading(false);
+    }
   };
 
   const inputCls = "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-600 focus:bg-white transition-colors";
@@ -160,7 +199,7 @@ export default function AuthPage() {
 
           {/* Social Buttons */}
           <div className="auth-social-row">
-            <button type="button" className="auth-social-btn" title="Continue with Google">
+            <button type="button" onClick={handleGoogleAuth} className="auth-social-btn" title="Continue with Google">
               {/* Google SVG */}
               <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
                 <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h13.2c-.6 3-2.3 5.5-4.8 7.2v6h7.8c4.5-4.2 7.3-10.4 7.3-17.5z" fill="#4285F4"/>
@@ -250,7 +289,7 @@ export default function AuthPage() {
 
           {/* Social Buttons */}
           <div className="auth-social-row">
-            <button type="button" className="auth-social-btn" title="Continue with Google">
+            <button type="button" onClick={handleGoogleAuth} className="auth-social-btn" title="Continue with Google">
               <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
                 <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h13.2c-.6 3-2.3 5.5-4.8 7.2v6h7.8c4.5-4.2 7.3-10.4 7.3-17.5z" fill="#4285F4"/>
                 <path d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.8-6c-2.1 1.4-4.9 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H2.5v6.2C6.5 42.6 14.7 48 24 48z" fill="#34A853"/>
@@ -281,6 +320,50 @@ export default function AuthPage() {
 
   return (
     <>
+      {/* ── LOCATION MODAL FOR GOOGLE SIGN IN ── */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <h3 className="text-xl font-bold mb-2">Select Your Location</h3>
+            <p className="text-gray-500 mb-6 text-sm">Please select your delivery location to continue.</p>
+
+            {authError && (
+              <div className="auth-error mb-4">{authError}</div>
+            )}
+
+            <div className="space-y-4">
+              <div className="auth-input-wrap">
+                <MapPin size={16} className="auth-input-icon" />
+                <select className={`${inputCls} pl-10 appearance-none`} value={googleDistrict} onChange={e => { setGoogleDistrict(e.target.value); setGoogleCity(""); }}>
+                  <option value="" disabled>Select Your District</option>
+                  {Array.from(new Set(allLocations.map(l => l.district))).sort().map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="auth-input-wrap">
+                <MapPin size={16} className="auth-input-icon" />
+                <select className={`${inputCls} pl-10 appearance-none`} value={googleCity} onChange={e => setGoogleCity(e.target.value)} disabled={!googleDistrict}>
+                  <option value="" disabled>{googleDistrict ? "Select Your City" : "Select District First"}</option>
+                  {allLocations.filter(l => l.district === googleDistrict).map(l => (
+                    <option key={l.id} value={l.city}>{l.city}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleSaveLocation} 
+              disabled={isLoading || !googleCity} 
+              className="auth-submit-btn mt-6"
+            >
+              {isLoading ? "Saving..." : "Continue to App"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── DESKTOP SPLIT LAYOUT (md+) ── */}
       <div className="auth-desktop">
         {/* Left decorative panel */}

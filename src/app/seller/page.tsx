@@ -7,7 +7,7 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getUserProfile, getShopByOwnerId, getProductsByShop, addProduct, updateProduct, deleteProduct, updateShop, getShopOrders, updateOrderStatus, updateOrderPreparation, getCategoryConfigs, Shop, Product, ProductVariation, Order, CategoryConfig } from "@/lib/db";
 
-const IMGBB_API_KEY = "2b266bed1b2c4b092e370cabdda506d8";
+const IMGBB_API_KEY = "217524a50a4562e887cc3bca17c1fd41";
 const GEMINI_API_KEY = "AIzaSyA-j1hR-hUsOZkU4SM8lDOtkLFR1HQks1M";
 
 /* ─── Square Image Cropper ─── */

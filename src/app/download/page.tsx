@@ -46,7 +46,9 @@ export default function DownloadPage() {
 
     xhr.onload = () => {
       if (xhr.status === 200) {
-        const blobUrl = URL.createObjectURL(xhr.response);
+        // Explicitly set the Android APK MIME type so the phone recognizes it as an installable file
+        const blob = new Blob([xhr.response], { type: "application/vnd.android.package-archive" });
+        const blobUrl = URL.createObjectURL(blob);
         setApkBlobUrl(blobUrl);
         setDownloadProgress(100);
         setIsDownloading(false);
@@ -74,6 +76,12 @@ export default function DownloadPage() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      
+      // Since we can't force the Android package installer to open automatically,
+      // we tell the user to look for the download popup.
+      setTimeout(() => {
+        alert("Check your notification bar or the popup at the bottom of the screen and click 'Open' to install the app!");
+      }, 500);
     }
   };
 

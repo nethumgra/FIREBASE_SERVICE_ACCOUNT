@@ -85,7 +85,7 @@ export default function DownloadPage() {
                   Download APK
                 </a>
                 <p className="text-xs text-gray-400 mt-4 px-4">
-                  Note: You might need to allow "Install from unknown sources" in your settings.
+                  Note: You might need to allow &quot;Install from unknown sources&quot; in your settings.
                 </p>
               </div>
             )}
@@ -122,7 +122,7 @@ export default function DownloadPage() {
             {os === "desktop" && (
               <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <p className="text-gray-600 mb-6 font-medium px-4">
-                  Scan this QR code with your phone's camera to download the app!
+                  Scan this QR code with your phone&apos;s camera to download the app!
                 </p>
                 <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 group">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

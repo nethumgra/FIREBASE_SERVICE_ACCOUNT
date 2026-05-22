@@ -9,20 +9,33 @@ import { Capacitor } from "@capacitor/core";
 import { CapacitorUpdater } from "@capgo/capacitor-updater";
 import { Package } from "lucide-react";
 
-// Meka thamai app eke danata thiyena version eka
-// Aluth update ekak yawaddi, Firebase eke mekata wada loku version ekak (e.g., "1.0.1") danna oni
+// Meka thamai app eke danata thiyena version eka (fallback)
 const CURRENT_APP_VERSION = "1.0.0"; 
 
 export default function AppUpdater() {
   const [updateAvailable, setUpdateAvailable] = useState<{version: string, url: string} | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    let listener: any;
+    
     // Web browser ekedi (Vercel eke) update popup eka pennanne na, Mobile App ekedi witharai pennanne
     if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
       CapacitorUpdater.notifyAppReady();
       checkUpdate();
+
+      // Download wena eka progress eka balanna
+      CapacitorUpdater.addListener('download', (info: any) => {
+        setProgress(Math.round(info.percent));
+      }).then((l: any) => listener = l);
     }
+    
+    return () => {
+      if (listener && listener.remove) {
+        listener.remove();
+      }
+    };
   }, []);
 
   const checkUpdate = async () => {
@@ -32,11 +45,23 @@ export default function AppUpdater() {
       
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Firebase eke thiyena version eka, me app eke version ekata wada aluth nam
-        if (data.latestVersion && data.latestVersion !== CURRENT_APP_VERSION) {
+        
+        let currentVersion = CURRENT_APP_VERSION;
+        try {
+            // Danata run wena OTA version eka gannawa
+            const current = await CapacitorUpdater.current();
+            if (current && current.bundle && current.bundle.version !== 'builtin') {
+                currentVersion = current.bundle.version;
+            }
+        } catch (e) {
+            console.error("Could not get current bundle", e);
+        }
+
+        // Firebase eke thiyena version eka, dan run wena ekata wada aluth nam witharai update eka pennanne
+        if (data.latestVersion && data.latestVersion !== currentVersion) {
           setUpdateAvailable({
             version: data.latestVersion,
-            url: data.updateUrl // Firebase storage hari wena thanaka thiyena .zip file eke link eka
+            url: data.updateUrl
           });
         }
       }
@@ -48,6 +73,7 @@ export default function AppUpdater() {
   const handleUpdate = async () => {
     if (!updateAvailable) return;
     setDownloading(true);
+    setProgress(0);
     try {
       // 1. Aluth zip file eka download karanawa
       const version = await CapacitorUpdater.download({
@@ -79,23 +105,33 @@ export default function AppUpdater() {
           </div>
           
           <h2 className="text-2xl font-bold text-gray-900 mb-2">New Update Available</h2>
-          <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-            Version <span className="font-bold text-green-700">{updateAvailable.version}</span> is ready to be installed. Please download the update to continue using the app with new features and improvements.
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            Version <span className="font-bold text-green-700">{updateAvailable.version}</span> is ready to be installed.
           </p>
+          
+          {downloading && (
+            <div className="w-full mb-6">
+              <div className="flex justify-between text-xs text-green-700 font-semibold mb-1">
+                <span>Downloading update...</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full bg-green-100 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                  style={{ width: \`\${progress}%\` }}
+                ></div>
+              </div>
+            </div>
+          )}
           
           <button 
             onClick={handleUpdate}
             disabled={downloading}
-            className={`w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all ${
+            className={\`w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all \${
               downloading ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 active:scale-95 shadow-lg shadow-green-600/30"
-            }`}
+            }\`}
           >
-            {downloading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Downloading...
-              </span>
-            ) : "Download Now"}
+            {downloading ? "Please wait..." : "Download Now"}
           </button>
         </div>
       </div>

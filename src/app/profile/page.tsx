@@ -805,17 +805,14 @@ export default function ProfilePage() {
             <div>
               <h3 className="font-bold text-gray-900 mb-4">Partner with us</h3>
               <ul className="space-y-3 text-sm text-gray-500">
-                <li className="hover:text-green-600 cursor-pointer transition-colors">Add your restaurant</li>
-                <li className="hover:text-green-600 cursor-pointer transition-colors" onClick={() => window.location.href='/auth'}>Sign in to deliver</li>
                 <li className="hover:text-green-600 cursor-pointer transition-colors" onClick={() => window.location.href='/riders'}>Details about riders</li>
-                <li className="hover:text-green-600 cursor-pointer transition-colors">Business Account</li>
               </ul>
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-4">Contact</h3>
               <ul className="space-y-3 text-sm text-gray-500">
                 <li>Support Center</li>
-                <li>hello@vitodelivery.com</li>
+                <li>info@vitodelivery.com</li>
                 <li>+94 77 123 4567</li>
               </ul>
             </div>

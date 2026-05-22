@@ -371,7 +371,7 @@ function ShopDetailContent() {
               <h3 className="font-bold text-gray-900 mb-4">Contact</h3>
               <ul className="space-y-3 text-sm text-gray-500">
                 <li>Support Center</li>
-                <li>hello@vitodelivery.com</li>
+                <li>info@vitodelivery.com</li>
               </ul>
             </div>
           </div>

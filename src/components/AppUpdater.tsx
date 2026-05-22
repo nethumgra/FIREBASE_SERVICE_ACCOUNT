@@ -118,7 +118,7 @@ export default function AppUpdater() {
               <div className="w-full bg-green-100 rounded-full h-2.5 overflow-hidden">
                 <div 
                   className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
-                  style={{ width: \`\${progress}%\` }}
+                  style={{ width: `${progress}%` }}
                 ></div>
               </div>
             </div>
@@ -127,9 +127,9 @@ export default function AppUpdater() {
           <button 
             onClick={handleUpdate}
             disabled={downloading}
-            className={\`w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all \${
+            className={`w-full text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all ${
               downloading ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 active:scale-95 shadow-lg shadow-green-600/30"
-            }\`}
+            }`}
           >
             {downloading ? "Please wait..." : "Download Now"}
           </button>

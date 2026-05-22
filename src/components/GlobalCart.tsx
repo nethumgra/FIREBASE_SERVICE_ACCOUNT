@@ -74,7 +74,7 @@ export default function GlobalCart() {
   const itemCount = cart.reduce((total, item) => total + item.qty, 0);
   const subtotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
 
-  const hideFloatingButton = pathname === '/checkout' || pathname.startsWith('/product/');
+  const hideFloatingButton = pathname === '/checkout' || pathname.startsWith('/product');
 
   return (
     <>

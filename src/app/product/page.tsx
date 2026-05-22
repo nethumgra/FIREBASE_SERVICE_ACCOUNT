@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ChevronLeft, Package, Plus, Minus, Home, ShoppingBag, Tag, User, Star, Send, X } from "lucide-react";
 import { getProductById, getShopById, getReviewsByProduct, addReview, Product, Review } from "@/lib/db";
 import { auth } from "@/lib/firebase";
@@ -23,10 +23,10 @@ function StarRating({ value, onChange, size = 28 }: { value: number; onChange?: 
   );
 }
 
-export default function ProductDetailPage() {
-  const params = useParams();
+function ProductDetailContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const productId = params.id as string;
+  const productId = searchParams.get("id") as string;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVarName, setSelectedVarName] = useState<string | null>(null);
@@ -477,5 +477,13 @@ export default function ProductDetailPage() {
         ))}
       </nav>
     </div>
+  );
+}
+
+export default function ProductDetailPage() {
+  return (
+    <Suspense fallback={<div className="w-full min-h-dvh flex items-center justify-center">Loading...</div>}>
+      <ProductDetailContent />
+    </Suspense>
   );
 }

@@ -120,7 +120,7 @@ function ShopsPageInner() {
     e.preventDefault();
     e.stopPropagation();
     if (product.variations && product.variations.length > 0) {
-      router.push(`/product/${product.id}`);
+      router.push(`/product?id=${product.id}`);
       return;
     }
     try {
@@ -589,7 +589,7 @@ function ProductCard({ product, onAdd }: { product: BrowseProduct; onAdd: (e: Re
       }} className="group-hover:-translate-y-0.5 group-hover:shadow-xl">
         
         {/* Photo */}
-        <a href={`/product/${product.id}`} className="block relative w-full aspect-square overflow-hidden bg-[#f5f5f5]">
+        <a href={`/product?id=${product.id}`} className="block relative w-full aspect-square overflow-hidden bg-[#f5f5f5]">
           <span style={{ position: "absolute", top: "0.6rem", left: "0.6rem", background: "#18b06a", color: "#fff", fontSize: "8px", fontWeight: 900, padding: "2px 6px", borderRadius: "5px", zIndex: 10 }}>NEW</span>
           <img src={product.imageUrl || "/placeholder.jpg"} alt={product.name}
             className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
@@ -597,7 +597,7 @@ function ProductCard({ product, onAdd }: { product: BrowseProduct; onAdd: (e: Re
 
         {/* Info */}
         <div className="p-2 flex-1 flex flex-col justify-between bg-white">
-          <a href={`/product/${product.id}`} style={{ textDecoration: "none" }}>
+          <a href={`/product?id=${product.id}`} style={{ textDecoration: "none" }}>
             <h3 style={{ fontSize: "11.5px", fontWeight: 600, color: "#1a1a1a", margin: "0 0 2px", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
               {product.name}
             </h3>

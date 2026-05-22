@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft, Star, Clock, Bike, Store, Package, Plus,
@@ -9,8 +9,10 @@ import {
 } from "lucide-react";
 import { getShopById, getProductsByShop, getCategoryConfigs, Shop, Product, CategoryConfig } from "@/lib/db";
 
-export default function ShopDetailPage({ params }: { params: { id: string } }) {
+function ShopDetailContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const shopId = searchParams.get("id") as string;
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<CategoryConfig[]>([]);
@@ -23,8 +25,8 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
       setIsLoading(true);
       try {
         const [shopData, productData, catData] = await Promise.all([
-          getShopById(params.id),
-          getProductsByShop(params.id),
+          getShopById(shopId),
+          getProductsByShop(shopId),
           getCategoryConfigs()
         ]);
         setShop(shopData);
@@ -33,8 +35,10 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
       } catch (err) { console.error(err); }
       finally { setIsLoading(false); }
     };
-    fetchData();
-  }, [params.id]);
+    if (shopId) {
+      fetchData();
+    }
+  }, [shopId]);
 
   const greenGrad = { background: 'linear-gradient(135deg, #2d6a2d, #348a34)' };
 
@@ -221,7 +225,7 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
                   e.preventDefault();
                   e.stopPropagation();
                   if (product.variations && product.variations.length > 0) {
-                    router.push(`/product/${product.id}`);
+                    router.push(`/product?id=${product.id}`);
                     return;
                   }
                   try {
@@ -261,7 +265,7 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
                     }} className={!isSoldOut ? "group-hover:-translate-y-0.5 group-hover:shadow-xl" : ""}>
 
                       {/* PHOTO */}
-                      <Link href={isSoldOut ? "#" : `/product/${product.id}`}
+                      <Link href={isSoldOut ? "#" : `/product?id=${product.id}`}
                         onClick={isSoldOut ? (e) => e.preventDefault() : undefined}
                         className="block relative w-full aspect-square overflow-hidden bg-[#f5f5f5]">
 
@@ -290,7 +294,7 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
 
                       {/* INFO */}
                       <div className="p-2 flex-1 flex flex-col justify-between bg-white">
-                        <Link href={isSoldOut ? "#" : `/product/${product.id}`}
+                        <Link href={isSoldOut ? "#" : `/product?id=${product.id}`}
                           onClick={isSoldOut ? (e) => e.preventDefault() : undefined}
                           style={{ textDecoration: "none" }}>
                           <h3 style={{
@@ -419,6 +423,14 @@ export default function ShopDetailPage({ params }: { params: { id: string } }) {
         </NavBtn>
       </nav>
     </div>
+  );
+}
+
+export default function ShopDetailPage() {
+  return (
+    <Suspense fallback={<div className="w-full min-h-dvh flex items-center justify-center">Loading...</div>}>
+      <ShopDetailContent />
+    </Suspense>
   );
 }
 

@@ -776,7 +776,7 @@ function NavBtn({ id, children, label, active, onClick }: {
 function ShopCard({ shop }: { shop: Shop }) {
   const router = useRouter();
   return (
-    <button onClick={() => router.push(`/shop/${shop.id}`)}
+    <button onClick={() => router.push(`/shop?id=${shop.id}`)}
       className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-sm text-left active:scale-[0.98] transition-all hover:shadow-md w-full border border-gray-100 flex flex-col group">
       {/* Image */}
       <div className="relative aspect-square w-full bg-gray-50 flex items-center justify-center overflow-hidden">

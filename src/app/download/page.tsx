@@ -69,21 +69,17 @@ export default function DownloadPage() {
   };
 
   const handleInstall = () => {
-    if (apkBlobUrl) {
-      const a = document.createElement("a");
-      a.href = apkBlobUrl;
-      a.download = "vito-delivery.apk";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Since we can't force the Android package installer to open automatically,
-      // we tell the user to look for the download popup.
-      setTimeout(() => {
-        alert("Check your notification bar or the popup at the bottom of the screen and click 'Open' to install the app!");
-      }, 500);
-    }
+    // Instead of using a Blob which can fail silently on some Android browsers,
+    // we use a direct navigation which forces the native download manager to handle it.
+    // The native download manager will properly prompt the user to "Open" and install the APK.
+    window.location.href = "/vito-delivery.apk";
+    
+    setTimeout(() => {
+      alert("Check your notification bar or the popup at the bottom of the screen and click 'Open' to install the app!");
+    }, 1000);
   };
+
+
 
   return (
     <div className="w-full min-h-dvh flex flex-col font-sans bg-[#f5f6fa]">

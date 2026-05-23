@@ -205,7 +205,7 @@ export default function DownloadPage() {
             {/* Desktop View */}
             {os === "desktop" && (
               <div className="w-full flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <p className="text-gray-600 mb-6 font-medium px-4">
+                <p className="text-gray-600 mb-6 font-medium px-4 text-center">
                   Scan this QR code with your phone&apos;s camera to download the app!
                 </p>
                 <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 group">
@@ -217,6 +217,29 @@ export default function DownloadPage() {
                   />
                 </div>
                 
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://vito-delivery.vercel.app/download");
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', 'vito-delivery-qr.png');
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error("Error downloading QR code:", error);
+                      alert("Failed to download QR code. Please try again.");
+                    }
+                  }}
+                  className="mb-6 flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-xl transition-colors"
+                >
+                  <Download className="w-5 h-5" /> Download QR Code
+                </button>
+
                 <p className="text-xs text-gray-400 flex items-center gap-1 font-semibold">
                   Works on both iOS & Android <Smartphone className="w-3 h-3" />
                 </p>
